@@ -1,183 +1,242 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    // Model Config
+document.addEventListener("DOMContentLoaded", () => {
     const MODEL_URL = "https://teachablemachine.withgoogle.com/models/dE6ElUUvO/";
-    let model, webcam, labelContainer, maxPredictions;
-
-    // Elements
-    const themeToggle = document.getElementById('theme-toggle');
     const html = document.documentElement;
-    const startWebcamBtn = document.getElementById('start-webcam');
-    const imageUpload = document.getElementById('image-upload');
-    const imagePreview = document.getElementById('image-preview');
-    const webcamContainer = document.getElementById('webcam-container');
-    const loadingOverlay = document.getElementById('loading-overlay');
-    const resultContainer = document.getElementById('result-container');
-    const labelResultDiv = document.getElementById('label-container');
-    const placeholder = document.getElementById('placeholder');
+    const themeToggle = document.getElementById("theme-toggle");
+    const startWebcamBtn = document.getElementById("start-webcam");
+    const imageUpload = document.getElementById("image-upload");
+    const imagePreview = document.getElementById("image-preview");
+    const webcamContainer = document.getElementById("webcam-container");
+    const loadingOverlay = document.getElementById("loading-overlay");
+    const loadingMessage = document.getElementById("loading-message");
+    const resultContainer = document.getElementById("result-container");
+    const labelContainer = document.getElementById("label-container");
+    const placeholder = document.getElementById("placeholder");
+    const resultTitle = document.getElementById("result-title");
+    const resultSummary = document.getElementById("result-summary");
+    const currentYear = document.getElementById("current-year");
+    const partnershipForm = document.getElementById("partnership-form");
 
-    // Theme Logic
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    html.setAttribute('data-theme', savedTheme);
+    let model;
+    let webcam;
+    let modelLoaded = false;
 
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = html.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        html.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-    });
-
-    // Load Model
-    async function loadModel() {
-        loadingOverlay.style.display = 'flex';
-        try {
-            const modelURL = MODEL_URL + "model.json";
-            const metadataURL = MODEL_URL + "metadata.json";
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
-            console.log("Model Loaded");
-        } catch (error) {
-            console.error("Failed to load model", error);
-            alert("모델을 불러오는 데 실패했습니다.");
-        } finally {
-            loadingOverlay.style.display = 'none';
-        }
+    function setTheme(theme) {
+        html.setAttribute("data-theme", theme);
+        localStorage.setItem("theme", theme);
     }
 
-    // Initialize UI
-    await loadModel();
+    const savedTheme = localStorage.getItem("theme") || "light";
+    setTheme(savedTheme);
 
-    // Predictions Rendering
-    function displayResults(predictions) {
-        resultContainer.style.display = 'block';
-        labelResultDiv.innerHTML = '';
-        
-        // Find top prediction
-        const topPrediction = predictions.reduce((prev, current) => 
-            (prev.probability > current.probability) ? prev : current
-        );
-
-        const resultTitle = document.getElementById('result-title');
-        resultTitle.textContent = `당신은 ${topPrediction.className}상을 닮으셨네요!`;
-
-        predictions.forEach(p => {
-            const percent = (p.probability * 100).toFixed(0);
-            const barWrapper = document.createElement('div');
-            barWrapper.className = 'bar-wrapper';
-            barWrapper.innerHTML = `
-                <div class="bar-label">
-                    <span>${p.className}</span>
-                    <span>${percent}%</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress" style="width: ${percent}%"></div>
-                </div>
-            `;
-            labelResultDiv.appendChild(barWrapper);
+    if (themeToggle) {
+        themeToggle.addEventListener("click", () => {
+            const nextTheme = html.getAttribute("data-theme") === "light" ? "dark" : "light";
+            setTheme(nextTheme);
         });
     }
 
-    // Image Upload Handling
-    imageUpload.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
+    if (currentYear) {
+        currentYear.textContent = String(new Date().getFullYear());
+    }
 
-        // Reset webcam if running
-        if (webcam) {
-            webcam.stop();
-            webcamContainer.innerHTML = '';
-            webcam = null;
-        }
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            imagePreview.src = e.target.result;
-            imagePreview.style.display = 'block';
-            placeholder.style.display = 'none';
-            webcamContainer.style.display = 'none';
-
-            // Wait for image to load before predicting
-            imagePreview.onload = async () => {
-                const predictions = await model.predict(imagePreview);
-                displayResults(predictions);
-            };
-        };
-        reader.readAsDataURL(file);
-    });
-
-    // Webcam Handling
-    startWebcamBtn.addEventListener('click', async () => {
-        if (webcam) {
-            webcam.stop();
-            webcamContainer.innerHTML = '';
-            webcam = null;
-            startWebcamBtn.textContent = "실시간 카메라";
+    function showLoading(message) {
+        if (!loadingOverlay) {
             return;
         }
-
-        loadingOverlay.style.display = 'flex';
-        const flip = true;
-        webcam = new tmImage.Webcam(400, 400, flip);
-        try {
-            await webcam.setup();
-            await webcam.play();
-            loadingOverlay.style.display = 'none';
-            
-            webcamContainer.style.display = 'block';
-            webcamContainer.appendChild(webcam.canvas);
-            imagePreview.style.display = 'none';
-            placeholder.style.display = 'none';
-            startWebcamBtn.textContent = "카메라 끄기";
-            
-            window.requestAnimationFrame(loop);
-        } catch (error) {
-            console.error(error);
-            alert("카메라를 시작할 수 없습니다.");
-            loadingOverlay.style.display = 'none';
+        if (loadingMessage) {
+            loadingMessage.textContent = message;
         }
-    });
+        loadingOverlay.hidden = false;
+    }
 
-    async function loop() {
-        if (webcam && webcam.canvas) {
-            webcam.update();
-            const predictions = await model.predict(webcam.canvas);
-            displayResults(predictions);
-            window.requestAnimationFrame(loop);
+    function hideLoading() {
+        if (loadingOverlay) {
+            loadingOverlay.hidden = true;
         }
     }
 
-    // Partnership Form Logic
-    const partnershipForm = document.getElementById('partnership-form');
-    if (partnershipForm) {
-        partnershipForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submit-btn');
-            const originalBtnText = submitBtn.textContent;
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = '보내는 중...';
+    async function ensureModelLoaded() {
+        if (modelLoaded) {
+            return;
+        }
 
-            const formData = new FormData(partnershipForm);
-            
+        showLoading("AI 분석 모델을 불러오는 중입니다.");
+        try {
+            model = await tmImage.load(`${MODEL_URL}model.json`, `${MODEL_URL}metadata.json`);
+            modelLoaded = true;
+        } catch (error) {
+            console.error("Model load failed:", error);
+            alert("AI 모델을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+            throw error;
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function stopWebcam() {
+        if (!webcam) {
+            return;
+        }
+
+        webcam.stop();
+        webcam = null;
+        webcamContainer.innerHTML = "";
+        webcamContainer.style.display = "none";
+        startWebcamBtn.textContent = "실시간 카메라";
+    }
+
+    function resetVisualState() {
+        placeholder.style.display = "none";
+        resultContainer.hidden = false;
+        labelContainer.innerHTML = "";
+    }
+
+    function buildInterpretation(topPrediction, percent) {
+        if (topPrediction.className.includes("강아지")) {
+            return `상위 결과는 ${topPrediction.className}이며, 현재 사진 기준 ${percent}% 경향으로 나타났습니다. 부드럽고 친근한 인상 요소가 상대적으로 더 크게 감지된 경우에 자주 보이는 결과입니다.`;
+        }
+
+        return `상위 결과는 ${topPrediction.className}이며, 현재 사진 기준 ${percent}% 경향으로 나타났습니다. 또렷한 눈매와 선명한 분위기처럼 날렵한 인상 요소가 상대적으로 더 크게 감지된 경우에 자주 보이는 결과입니다.`;
+    }
+
+    function renderResults(predictions) {
+        resetVisualState();
+
+        const topPrediction = predictions.reduce((best, current) => {
+            return current.probability > best.probability ? current : best;
+        });
+        const topPercent = (topPrediction.probability * 100).toFixed(0);
+
+        resultTitle.textContent = `당신은 ${topPrediction.className} 경향이 더 높게 나왔습니다.`;
+        resultSummary.textContent = buildInterpretation(topPrediction, topPercent);
+
+        predictions.forEach((prediction) => {
+            const percent = (prediction.probability * 100).toFixed(0);
+            const barWrapper = document.createElement("div");
+            barWrapper.className = "bar-wrapper";
+
+            barWrapper.innerHTML = `
+                <div class="bar-label">
+                    <span>${prediction.className}</span>
+                    <span>${percent}%</span>
+                </div>
+                <div class="progress-bar" role="img" aria-label="${prediction.className} ${percent}퍼센트">
+                    <div class="progress" style="width: ${percent}%"></div>
+                </div>
+            `;
+
+            labelContainer.appendChild(barWrapper);
+        });
+    }
+
+    async function predictFromElement(element) {
+        await ensureModelLoaded();
+        const predictions = await model.predict(element);
+        renderResults(predictions);
+    }
+
+    if (imageUpload) {
+        imageUpload.addEventListener("change", (event) => {
+            const file = event.target.files && event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            stopWebcam();
+
+            const reader = new FileReader();
+            reader.onload = (loadEvent) => {
+                imagePreview.src = loadEvent.target.result;
+                imagePreview.hidden = false;
+                imagePreview.onload = async () => {
+                    try {
+                        await predictFromElement(imagePreview);
+                    } catch (error) {
+                        console.error("Prediction failed:", error);
+                    }
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function webcamLoop() {
+        if (!webcam || !webcam.canvas) {
+            return;
+        }
+
+        webcam.update();
+        try {
+            const predictions = await model.predict(webcam.canvas);
+            renderResults(predictions);
+        } catch (error) {
+            console.error("Webcam prediction failed:", error);
+        }
+        window.requestAnimationFrame(webcamLoop);
+    }
+
+    if (startWebcamBtn) {
+        startWebcamBtn.addEventListener("click", async () => {
+            if (webcam) {
+                stopWebcam();
+                placeholder.style.display = "flex";
+                imagePreview.hidden = true;
+                return;
+            }
+
+            try {
+                await ensureModelLoaded();
+                showLoading("카메라 권한을 요청하는 중입니다.");
+                webcam = new tmImage.Webcam(480, 480, true);
+                await webcam.setup();
+                await webcam.play();
+                webcamContainer.style.display = "block";
+                webcamContainer.innerHTML = "";
+                webcamContainer.appendChild(webcam.canvas);
+                imagePreview.hidden = true;
+                placeholder.style.display = "none";
+                startWebcamBtn.textContent = "카메라 끄기";
+                hideLoading();
+                window.requestAnimationFrame(webcamLoop);
+            } catch (error) {
+                console.error("Webcam failed:", error);
+                hideLoading();
+                stopWebcam();
+                alert("카메라를 시작할 수 없습니다. 브라우저 권한을 확인해 주세요.");
+            }
+        });
+    }
+
+    if (partnershipForm) {
+        partnershipForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById("submit-btn");
+            const originalLabel = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = "전송 중...";
+
             try {
                 const response = await fetch(partnershipForm.action, {
-                    method: 'POST',
-                    body: formData,
+                    method: "POST",
+                    body: new FormData(partnershipForm),
                     headers: {
-                        'Accept': 'application/json'
+                        Accept: "application/json"
                     }
                 });
 
-                if (response.ok) {
-                    alert('제휴 문의가 성공적으로 접수되었습니다. 감사합니다!');
-                    partnershipForm.reset();
-                } else {
-                    alert('Oops! 제출 중 문제가 발생했습니다.');
+                if (!response.ok) {
+                    throw new Error("Form submit failed");
                 }
+
+                alert("문의가 정상적으로 접수되었습니다.");
+                partnershipForm.reset();
             } catch (error) {
-                alert('Oops! 제출 중 문제가 발생했습니다.');
+                console.error("Form submit failed:", error);
+                alert("문의 접수 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.");
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = originalBtnText;
+                submitBtn.textContent = originalLabel;
             }
         });
     }
