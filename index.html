@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>동물상 테스트 - 강아지? 고양이?</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Teachable Machine Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">🐾 동물상 테스트</div>
+        <button id="theme-toggle" class="btn-icon">
+            <span class="icon-light">☀️</span>
+            <span class="icon-dark">🌙</span>
+        </button>
+    </header>
+
+    <main>
+        <section id="test-section" class="card main-card">
+            <h1>나는 어떤 동물과 닮았을까?</h1>
+            <p class="subtitle">강아지상 vs 고양이상, 당신의 얼굴을 분석합니다!</p>
+            
+            <div id="loading-overlay" class="overlay" style="display: none;">
+                <div class="spinner"></div>
+                <p>모델을 불러오는 중...</p>
+            </div>
+
+            <div class="test-container">
+                <div class="preview-area">
+                    <div id="webcam-container"></div>
+                    <img id="image-preview" src="" alt="미리보기" style="display: none;">
+                    <div id="placeholder" class="placeholder">
+                        <span class="icon">📷</span>
+                        <p>사진을 업로드하거나<br>카메라를 켜주세요</p>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="upload-btn-wrapper">
+                        <label for="image-upload" class="btn primary">사진 업로드</label>
+                        <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                    </div>
+                    <button id="start-webcam" class="btn secondary">실시간 카메라</button>
+                </div>
+
+                <div id="result-container" class="result-area" style="display: none;">
+                    <h2 id="result-title">분석 결과</h2>
+                    <div id="label-container" class="label-bars">
+                        <!-- 결과가 여기에 동적으로 생성됨 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="partnership-section" class="card">
+            <h2>제휴 문의</h2>
+            <form id="partnership-form" action="https://formspree.io/f/mlgwaoae" method="POST">
+                <div class="form-group">
+                    <label for="name">이름/회사명</label>
+                    <input type="text" id="name" name="name" required placeholder="이름 또는 회사명을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label for="email">이메일</label>
+                    <input type="email" id="email" name="email" required placeholder="example@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="message">문의 내용</label>
+                    <textarea id="message" name="message" required placeholder="문의하실 내용을 입력해 주세요"></textarea>
+                </div>
+                <button type="submit" id="submit-btn" class="btn primary">문의하기</button>
+            </form>
+        </section>
+
+        <section id="comments-section" class="card">
+            <div id="disqus_thread"></div>
+            <script>
+                (function() {
+                    var d = document, s = d.createElement('script');
+                    s.src = 'https://productbuilder-ftx7dllmxg.disqus.com/embed.js';
+                    s.setAttribute('data-timestamp', +new Date());
+                    (d.head || d.body).appendChild(s);
+                })();
+            </script>
+            <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 동물상 테스트. All rights reserved.</p>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>
