@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://product-builder-lecture2-fui.pages.dev/sitemap.xml
